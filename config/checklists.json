@@ -1,0 +1,14 @@
+{
+  "checklists": [
+    {
+      "id": "demo_kit",
+      "name": "Demo package (COCO-compatible classes)",
+      "items": {
+        "bottle": 1,
+        "cup": 1,
+        "book": 1,
+        "cell phone": 1
+      }
+    }
+  ]
+}
