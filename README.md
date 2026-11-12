@@ -1,6 +1,6 @@
 # AI-Based Package Packing Verification System
 
-A decision-support prototype that inspects **static images of one package type** and compares visible objects against an expected packing checklist. It uses **YOLOv8 + FastAPI + Python verification rules + SQLite**. Designed for a future Streamlit dashboard.
+A decision-support prototype that inspects **static images of one package type** and compares visible objects against an expected packing checklist. It uses **YOLOv8 + FastAPI + Python verification rules + SQLite**. Includes a connected **Streamlit dashboard** for image upload, inspection results, history and reporting.
 
 > **Important:** A `Pass` means the detected objects match the checklist under the configured thresholds; it is **not proof** that a package is correct. Occluded, missed, or visually similar items can cause errors. Human inspection is still needed.
 
@@ -71,7 +71,18 @@ curl -X POST http://127.0.0.1:8000/inspect -F "checklist_id=demo_kit" -F "file=@
 
 These thresholds are configurable in `.env`; calibrate with a labeled validation set before treating them as reliable. High IoU is only a rough ambiguity indicator, **not a robust occlusion detector**. A completely invisible item cannot be recognized by a detector; the missing-item rule still flags the shortage when expected.
 
-## 6. Test
+## 6. Launch the Streamlit frontend
+
+See **[FRONTEND_SETUP.md](FRONTEND_SETUP.md)** for a step-by-step Windows setup and demo. Keep FastAPI running in Terminal 1, then in Terminal 2:
+
+```powershell
+pip install -r requirements-frontend.txt
+python -m streamlit run frontend/app.py
+```
+
+Open **http://localhost:8501** to select a checklist, upload one or multiple images, review YOLO annotations and the rule-engine decision, browse history, inspect analytics, and export CSV reports. The frontend uses the existing backend API; it does not reimplement the detection model.
+
+## 7. Test
 
 ```bash
 python -m pytest -q
@@ -79,7 +90,7 @@ python -m pytest -q
 
 API tests replace YOLO with a fake detector, so model weights are not required for tests.
 
-## 7. GitHub setup
+## 8. GitHub setup
 
 Create an empty GitHub repo `ai-package-packing-verification` with no README or `.gitignore` (these files are already included). Run:
 
@@ -94,12 +105,12 @@ git push -u origin main
 
 Never commit `.env`, private sample images, collected data, or model weights without permission and applicable licenses.
 
-## 8. Next phases
+## 9. Next phases
 
 1. Capture and label example package images, with correct/missing/extra labels and bounding boxes.
 2. Evaluate baseline precision, recall, mAP on held-out images, or fine-tune YOLO with a new `data.yaml`.
 3. Evaluate package-level verification accuracy and false-flag rate with **manually verified** ground truth.
-4. Build a Streamlit UI consuming the API (`/inspect`, `/checklists`, `/summary`, `/inspections/export.csv`).
+4. Use the included Streamlit UI consuming the API (`/inspect`, `/checklists`, `/summary`, `/inspections/export.csv`).
 5. Improve uncertainty checks (duplicate boxes, glare/blur, class-specific threshold calibration).
 
 ## Known prototype limits
@@ -119,4 +130,9 @@ Never commit `.env`, private sample images, collected data, or model weights wit
 - `backend/main.py`: FastAPI API endpoints and upload validation
 - `backend/schemas.py`: typed payloads
 - `backend/checklists.py`: editable checklists
-- `tests/`: isolated unit and API tests
+- `frontend/app.py`: Streamlit dashboard
+- `frontend/api.py`: HTTP adapter for FastAPI
+- `frontend/presentation.py`: formatting helpers
+- `requirements-frontend.txt`: frontend dependencies
+- `FRONTEND_SETUP.md`: frontend setup guide
+- `tests/`: isolated unit, HTTP-adapter, and API tests

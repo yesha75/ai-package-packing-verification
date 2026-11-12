@@ -1,0 +1,4 @@
+# Install in the same environment as requirements.txt
+streamlit>=1.43,<2
+requests>=2.31,<3
+pandas>=2.1,<3
