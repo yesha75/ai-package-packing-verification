@@ -30,6 +30,6 @@ class YOLODetector:
         return detections
 
 
-@lru_cache(maxsize=1)
-def get_detector() -> YOLODetector:
-    return YOLODetector(config.MODEL_WEIGHTS)
+@lru_cache(maxsize=2)
+def get_detector(weights: str | None = None) -> YOLODetector:
+    return YOLODetector(weights or config.MODEL_WEIGHTS)

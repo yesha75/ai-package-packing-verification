@@ -20,7 +20,7 @@ This frontend works with the existing **FastAPI + YOLOv8** backend in this repos
 For example:
 
 ```powershell
-cd C:\Users\yesha\Downloads\ai-package-packing-verification
+cd path\to\ai-package-packing-verification
 ```
 
 Make sure `backend/`, `frontend/`, `requirements.txt`, and `requirements-frontend.txt` are all in this same project folder.

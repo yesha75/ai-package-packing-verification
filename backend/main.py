@@ -45,7 +45,19 @@ async def read_image(file: UploadFile) -> Image.Image:
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "model_weights": config.MODEL_WEIGHTS}
+    models_by_checklist = {}
+    for checklist in list_checklists():
+        try:
+            models_by_checklist[checklist.id] = Path(
+                config.model_weights_for_checklist(checklist.id)
+            ).name
+        except FileNotFoundError:
+            models_by_checklist[checklist.id] = "unavailable (checkpoint not installed)"
+    return {
+        "status": "ok",
+        "model_weights": config.MODEL_WEIGHTS,
+        "models_by_checklist": models_by_checklist,
+    }
 
 
 @app.get("/checklists", response_model=list[Checklist])
@@ -63,6 +75,10 @@ def resolve_checklist(checklist_id: str) -> Checklist:
 @app.post("/inspect", response_model=InspectionResponse)
 async def inspect(file: UploadFile = File(...), checklist_id: str = Form(...)):
     checklist = resolve_checklist(checklist_id)
+    try:
+        config.model_weights_for_checklist(checklist.id)
+    except FileNotFoundError as exc:
+        raise HTTPException(503, str(exc)) from exc
     image = await read_image(file)
     return inspect_image(image, file.filename or "unnamed", checklist)
 
@@ -72,6 +88,10 @@ async def inspect_batch(files: list[UploadFile] = File(...), checklist_id: str =
     checklist = resolve_checklist(checklist_id)
     if not 1 <= len(files) <= config.MAX_BATCH_SIZE:
         raise HTTPException(400, f"Submit 1–{config.MAX_BATCH_SIZE} images per request")
+    try:
+        config.model_weights_for_checklist(checklist.id)
+    except FileNotFoundError as exc:
+        raise HTTPException(503, str(exc)) from exc
     # Validate all images before processing any, to avoid partial results from bad input.
     images = [await read_image(file) for file in files]
     return [inspect_image(image, file.filename or "unnamed", checklist)
@@ -119,4 +139,15 @@ def annotated_image(inspection_id: str):
     path = Path(saved[1])
     if not path.is_file():
         raise HTTPException(404, "Annotated image not found")
+    return FileResponse(path, media_type="image/jpeg")
+
+
+@app.get("/inspections/{inspection_id}/original")
+def original_image(inspection_id: str):
+    saved = database.get_inspection(inspection_id)
+    if saved is None:
+        raise HTTPException(404, "Inspection not found")
+    path = Path(saved[2]) if saved[2] else None
+    if path is None or not path.is_file():
+        raise HTTPException(404, "Original image is not available for this inspection")
     return FileResponse(path, media_type="image/jpeg")

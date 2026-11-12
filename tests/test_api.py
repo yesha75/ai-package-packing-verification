@@ -24,7 +24,7 @@ def test_full_api_flow(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "DATA_DIR", tmp_path)
     monkeypatch.setattr(config, "DB_PATH", tmp_path / "test.sqlite3")
     monkeypatch.setattr(config, "ANNOTATED_DIR", tmp_path / "annotated")
-    monkeypatch.setattr(pipeline, "get_detector", lambda: FakeDetector())
+    monkeypatch.setattr(pipeline, "get_detector", lambda *_args: FakeDetector())
     with TestClient(app) as client:
         assert client.get("/health").status_code == 200
         assert client.get("/checklists").json()[0]["id"] == "demo_kit"
@@ -47,10 +47,25 @@ def test_batch(tmp_path, monkeypatch):
     monkeypatch.setattr(config, "DATA_DIR", tmp_path)
     monkeypatch.setattr(config, "DB_PATH", tmp_path / "test.sqlite3")
     monkeypatch.setattr(config, "ANNOTATED_DIR", tmp_path / "annotated")
-    monkeypatch.setattr(pipeline, "get_detector", lambda: FakeDetector())
+    monkeypatch.setattr(pipeline, "get_detector", lambda *_args: FakeDetector())
     with TestClient(app) as client:
         response = client.post("/inspect/batch", data={"checklist_id": "demo_kit"},
             files=[("files", ("one.png", png_bytes(), "image/png")),
                    ("files", ("two.png", png_bytes(), "image/png"))])
         assert response.status_code == 200, response.text
         assert len(response.json()) == 2
+
+
+def test_missing_checklist_model_reports_unavailable(tmp_path, monkeypatch):
+    monkeypatch.setattr(config, "PACKING_MODEL_WEIGHTS", str(tmp_path / "missing.pt"))
+    with TestClient(app) as client:
+        health = client.get("/health").json()
+        assert health["models_by_checklist"]["packing_sample_878"] == (
+            "unavailable (checkpoint not installed)"
+        )
+        response = client.post(
+            "/inspect", data={"checklist_id": "packing_sample_878"},
+            files={"file": ("test.png", png_bytes(), "image/png")},
+        )
+        assert response.status_code == 503
+        assert "checkpoint is unavailable" in response.json()["detail"]

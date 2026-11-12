@@ -9,6 +9,16 @@
         "book": 1,
         "cell phone": 1
       }
+    },
+    {
+      "id": "packing_sample_878",
+      "name": "Zenodo box-scene sample 878 (verified contents)",
+      "items": {
+        "can": 1,
+        "cup": 2,
+        "apple": 1,
+        "bowl": 1
+      }
     }
   ]
 }

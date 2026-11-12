@@ -1,0 +1,13 @@
+image_filename,inspection_id,checklist_id,expected_bottle,expected_cup,expected_book,expected_cell_phone,actual_bottle,actual_cup,actual_book,actual_cell_phone,actual_unexpected_classes,package_correct_actual,box_annotations_file,verified_by,notes
+Neatly Packed YOLO Test Items.png,94e98c3cf9ec4556a0391ebc2a441c59,demo_kit,1,1,1,1,,,,,,,,,
+Demo Kit in a Cardboard Box.png,2e165588ccb24c349b340e0ea1f32fd7,demo_kit,1,1,1,1,,,,,,,,,
+Data Science Essentials Box-5.png,97204237c5c444f1b929269712c5290b,demo_kit,1,1,1,1,,,,,,,,,
+Organized Essentials in a Cardboard Box-4.png,f980c6be411a43c5864c711bb100d0b5,demo_kit,1,1,1,1,,,,,,,,,
+Packed Box with Laptop and Essentials-3.png,95f1b710458a4191ad0ee61f725f8095,demo_kit,1,1,1,1,,,,,,,,,
+Data Science Gift Box Arrangement-2.png,6cfed0520e114913a33f302811dec56e,demo_kit,1,1,1,1,,,,,,,,,
+Curated Essentials in a Cardboard Box-1.png,2d1214a757344525b9ecc052f83fb3fe,demo_kit,1,1,1,1,,,,,,,,,
+Data Science Essentials Box-5.png,a7c96bfba73c4abc8cc25cc6621a3e74,demo_kit,1,1,1,1,,,,,,,,,
+Packed Box with Laptop and Essentials-3.png,3cdd01f0bbe646088af364f1b5465654,demo_kit,1,1,1,1,,,,,,,,,
+Data Science Gift Box Arrangement-2.png,1c32e3bf753e4a3a9a6744d7b2bef0e6,demo_kit,1,1,1,1,,,,,,,,,
+Packed Box with Laptop and Essentials-3.png,e192449f54734d419e5ed290bf01f9e7,demo_kit,1,1,1,1,,,,,,,,,
+Neatly Packed YOLO Test Items.png,89f2b31e7a904c71809a7debd5d3fdaf,demo_kit,1,1,1,1,,,,,,,,,

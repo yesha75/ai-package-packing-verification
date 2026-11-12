@@ -27,10 +27,13 @@ def draw_annotated(image: Image.Image, detections: list[Detection], target: Path
 
 def inspect_image(image: Image.Image, filename: str, checklist: Checklist) -> InspectionResponse:
     started = perf_counter()
-    detections = get_detector().detect(image)
+    detections = get_detector(config.model_weights_for_checklist(checklist.id)).detect(image)
     verification = verify_package(detections, checklist.items)
     inspection_id = uuid4().hex
     annotated_path = config.ANNOTATED_DIR / f"{inspection_id}.jpg"
+    original_path = config.ORIGINAL_DIR / f"{inspection_id}.jpg"
+    original_path.parent.mkdir(parents=True, exist_ok=True)
+    image.convert("RGB").save(original_path, format="JPEG", quality=95)
     draw_annotated(image, detections, annotated_path)
     record = InspectionResponse(
         **verification.model_dump(), id=inspection_id, filename=filename,
@@ -40,5 +43,5 @@ def inspect_image(image: Image.Image, filename: str, checklist: Checklist) -> In
         detections=detections,
         annotated_image_url=f"/inspections/{inspection_id}/image",
     )
-    database.save_inspection(record.model_dump(), str(annotated_path))
+    database.save_inspection(record.model_dump(), str(annotated_path), str(original_path))
     return record

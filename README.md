@@ -1,138 +1,108 @@
-# AI-Based Package Packing Verification System
+# PackSure — Package Packing Verification
 
-A decision-support prototype that inspects **static images of one package type** and compares visible objects against an expected packing checklist. It uses **YOLOv8 + FastAPI + Python verification rules + SQLite**. Includes a connected **Streamlit dashboard** for image upload, inspection results, history and reporting.
+PackSure is a local decision-support prototype for checking visible objects against a packing checklist. It combines YOLO object detection, a FastAPI service, count-based verification rules, SQLite inspection history, and a Streamlit dashboard.
 
-> **Important:** A `Pass` means the detected objects match the checklist under the configured thresholds; it is **not proof** that a package is correct. Occluded, missed, or visually similar items can cause errors. Human inspection is still needed.
+> **A Pass is not proof that a physical package is correct.** Missed, occluded, or misclassified objects can produce incorrect decisions. Keep a human in the review loop.
 
-## 1. Requirements
+![PackSure inspection workflow](docs/images/packsure-workflow.svg)
 
-Python **3.11** is recommended. Use a new virtual environment, not a Jetson-specific PyTorch setup. Internet access is needed on the first YOLO run to download the default `yolov8n.pt` weights.
+## Live dashboard screenshot
 
-## 2. Setup
+![PackSure Streamlit dashboard](docs/images/packsure-dashboard.png)
 
-Open a terminal **in this project folder** and run:
+Captured from the running local app. The counters reflect this workspace's inspection history; they are not model-accuracy measurements.
 
-**Windows (PowerShell):**
+## At a glance
+
+- **Backend:** FastAPI, Ultralytics YOLO, SQLite
+- **Frontend:** Streamlit dashboard for single or batch inspections, history, analytics, and CSV export
+- **Checklists:** `demo_kit` uses COCO classes; `packing_sample_878` uses a five-class packing-scene model when its checkpoint is available
+- **Input:** JPG, PNG, or WEBP; up to 10 MB per image and 10 images per batch
+- **Status:** local academic prototype; package-level accuracy has not been established
+
+## How an inspection works
+
+1. Choose a checklist and upload one or more package images.
+2. FastAPI selects the detector configured for that checklist and returns object labels, confidence, and boxes.
+3. Verification rules compare confident detections with expected quantities.
+4. The dashboard shows Pass or Needs Review, reasons, and annotated images. The API also stores original images and inspection history locally.
+
+## Project visuals
+
+![Object-detection metrics on the two evaluation datasets](docs/images/detection-metrics.svg)
+
+The two panels use different datasets and class sets; compare results only within each evaluation. Neither panel measures package-level accuracy.
+
+## Evaluation status
+
+| Evaluation | Precision | Recall | mAP@0.5 | mAP@0.5:0.95 | What it measures |
+|---|---:|---:|---:|---:|---|
+| COCO validation, four selected classes | 38.3% | 26.2% | 24.4% | 15.4% | Generic object detection baseline |
+| Zenodo packing scenes, five selected classes | 96.0% | 98.0% | 96.1% | 83.4% | Object detection after one training epoch |
+
+The packing-scene figures are exploratory: the held-out split informed development and is not an untouched final benchmark. A live check of sample 878 returned the expected counts, but this sample was also used during development. The source dataset has bounding boxes, not verified package pass/fail outcomes. **Package accuracy, false-pass rate, and false-flag rate remain unmeasured.** See [the COCO report](evaluation/results/coco_baseline.md) and [the packing-scene report](evaluation/results/packingdata_pilot.md) for details and limitations.
+
+The requirement-by-requirement status is in [the proposal compliance review](evaluation/results/proposal_compliance.md). A package-evaluation script is available for when original images and manual labels are recovered: fill each `actual_*` cell with a manually checked count (including `0`), enter `none` or the unexpected class names, set `package_correct_actual` to `true`/`false`, and identify the human verifier. Do not copy YOLO predictions into ground truth. First run `python tools/evaluate_packages.py --preflight`, then export inspections from `/inspections/export.csv` to `evaluation/results/inspection_results.csv` and run `python tools/evaluate_packages.py`. It refuses to calculate results while ground truth or matching predictions are missing or inconsistent.
+
+## Run locally
+
+Use Python 3.11. From the repository root, create an environment and install dependencies:
 
 ```powershell
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 pip install -r requirements.txt
+pip install -r requirements-frontend.txt
 Copy-Item .env.example .env
 ```
 
-If PowerShell blocks activation, use Command Prompt and `.venv\Scripts\activate.bat`, or run `.venv\Scripts\python.exe` directly.
-
-**macOS/Linux:**
-
-```bash
-python3.11 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip
-pip install -r requirements.txt
-cp .env.example .env
-```
-
-## 3. Start API
-
-```bash
-uvicorn backend.main:app --reload
-```
-
-Open **http://127.0.0.1:8000/docs**. In the Swagger UI:
-
-1. `GET /checklists` – find `demo_kit`.
-2. `POST /inspect` – select `demo_kit` and upload a PNG/JPEG/WEBP.
-3. Review status, reasons, detected counts, boxes and annotated image URL.
-4. `GET /summary`, `GET /inspections`, `GET /inspections/export.csv`.
-5. `POST /inspect/batch` for 1–10 images at once.
-
-Alternatively, upload with curl:
-
-```bash
-curl -X POST http://127.0.0.1:8000/inspect -F "checklist_id=demo_kit" -F "file=@sample_package.jpg"
-```
-
-## 4. Demo checklist and model
-
-`config/checklists.json` expects **one bottle, one cup, one book, one cell phone**. These are object categories from COCO pretrained YOLO. You may physically stage these 4 objects in a shallow box and photograph them from above. For a useful experiment, make *correct*, *missing*, *unexpected*, *extra quantity*, *occluded*, and *low-light* images.
-
-`MODEL_WEIGHTS=yolov8n.pt` gives a **generic baseline only**. It is **not trained specifically on packed parcels**. A pretrained model may miss objects or confuse similar classes. When you train a model for your actual 3–5 item classes, copy it to `weights/best.pt` and set `MODEL_WEIGHTS=weights/best.pt` in `.env` (run the API from project root). Keep the JSON checklist labels identical to model class names.
-
-## 5. Explainable decision rules
-
-- Confident detections (`>=0.50`) count toward the expected quantity for each class.
-- Too few items → `Needs Review` (missing).
-- Detected classes absent from checklist → `Needs Review` (unexpected).
-- Too many items of a supported class → `Needs Review` (excess quantity).
-- Low-confidence detections (`0.25`–`<0.50`) or high overlap IoU (`>=0.65`) → `Needs Review` for uncertainty.
-- Otherwise → `Pass`.
-
-These thresholds are configurable in `.env`; calibrate with a labeled validation set before treating them as reliable. High IoU is only a rough ambiguity indicator, **not a robust occlusion detector**. A completely invisible item cannot be recognized by a detector; the missing-item rule still flags the shortage when expected.
-
-## 6. Launch the Streamlit frontend
-
-See **[FRONTEND_SETUP.md](FRONTEND_SETUP.md)** for a step-by-step Windows setup and demo. Keep FastAPI running in Terminal 1, then in Terminal 2:
+Start the API in one terminal:
 
 ```powershell
-pip install -r requirements-frontend.txt
-python -m streamlit run frontend/app.py
+uvicorn backend.main:app --host 127.0.0.1 --port 8000
 ```
 
-Open **http://localhost:8501** to select a checklist, upload one or multiple images, review YOLO annotations and the rule-engine decision, browse history, inspect analytics, and export CSV reports. The frontend uses the existing backend API; it does not reimplement the detection model.
+Start the dashboard in another terminal:
 
-## 7. Test
+```powershell
+python -m streamlit run frontend/app.py --server.address 127.0.0.1 --server.port 8501
+```
 
-```bash
+Open [the dashboard](http://127.0.0.1:8501) or [the API docs](http://127.0.0.1:8000/docs). The sidebar reports the model selected for each checklist. The COCO model weights download automatically on first use if needed.
+
+### Try the packing-scene checklist
+
+The repository excludes the source dataset, generated image copies, and model checkpoints. When the five-class checkpoint is installed at `runs/detect/evaluation/packingdata_yolo_5class/full_train_1ep/weights/best.pt`, the API uses it for `packing_sample_878`. If it is missing, the health response reports the checklist model as unavailable and inspections return a clear error instead of silently using an incompatible detector. To reproduce this experiment, obtain the [Zenodo packingdata dataset](https://doi.org/10.5281/zenodo.7904630), prepare the five-class YOLO layout described in [the dataset notes](evaluation/packingdata_yolo_5class/README.md), and train a compatible checkpoint. The original Zenodo record does not state a license in its rights metadata, so check the terms before redistributing its images or annotations.
+
+In a workspace where you have separately downloaded and prepared the dataset, sample 878 is at `evaluation/packingdata_yolo_5class/images/test/878_mult5-view-2.mkv_20210118_234712.926.jpg`. Upload it with checklist `packing_sample_878`; the annotated counts should be can ×1, cup ×2, apple ×1, bowl ×1. The image and checkpoint are deliberately excluded from Git, so they are not available in a clean clone. This is a functionality check, not independent accuracy evidence.
+
+## Decision rules
+
+- Detections at or above the configured confidence threshold count toward the checklist.
+- Missing, unexpected, or excess objects result in **Needs Review**.
+- Low-confidence detections and high box overlap also trigger review.
+- Thresholds are configurable in `.env`; they require calibration on manually labeled package images before operational use.
+
+## Tests
+
+Run the test suite from the repository root:
+
+```powershell
 python -m pytest -q
 ```
 
-API tests replace YOLO with a fake detector, so model weights are not required for tests.
+The API tests use a fake detector and do not require model weights. The current suite has 20 passing tests.
 
-## 8. GitHub setup
+## Data, artifacts, and privacy
 
-Create an empty GitHub repo `ai-package-packing-verification` with no README or `.gitignore` (these files are already included). Run:
+Git ignores local environment files, model weights, SQLite databases, downloaded datasets, image copies, caches, and training runs. Keep those artifacts out of public commits. The evaluation reports, dataset instructions, and small diagrams are safe to track. Uploaded images and history remain local under `data/`.
 
-```bash
-git init
-git add .
-git commit -m "Initial FastAPI package inspection backend"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/ai-package-packing-verification.git
-git push -u origin main
-```
+This project uses Ultralytics YOLO. Review the [Ultralytics license](https://www.ultralytics.com/license) before redistributing or using the project beyond academic and personal work. The external packing dataset is not included in this repository.
 
-Never commit `.env`, private sample images, collected data, or model weights without permission and applicable licenses.
+## Known limitations
 
-## 9. Next phases
-
-1. Capture and label example package images, with correct/missing/extra labels and bounding boxes.
-2. Evaluate baseline precision, recall, mAP on held-out images, or fine-tune YOLO with a new `data.yaml`.
-3. Evaluate package-level verification accuracy and false-flag rate with **manually verified** ground truth.
-4. Use the included Streamlit UI consuming the API (`/inspect`, `/checklists`, `/summary`, `/inspections/export.csv`).
-5. Improve uncertainty checks (duplicate boxes, glare/blur, class-specific threshold calibration).
-
-## Known prototype limits
-
-- CPU inference may be slow; GPU acceleration is optional.
-- SQLite and local image storage are suitable for a local single-user project, not hardened production.
-- No login/authentication or deployment security; run locally, do not expose the API publicly.
-- Package type is fixed in the initial JSON checklist, as in the proposal.
-- Counts are detection counts, not verified physical inventory; overlapping items can be double counted or missed.
-
-## Files
-
-- `backend/detector.py`: YOLO inference and box extraction
-- `backend/rules.py`: checklist comparison and uncertainty
-- `backend/pipeline.py`: inference + annotation + saving
-- `backend/database.py`: SQLite history and summary
-- `backend/main.py`: FastAPI API endpoints and upload validation
-- `backend/schemas.py`: typed payloads
-- `backend/checklists.py`: editable checklists
-- `frontend/app.py`: Streamlit dashboard
-- `frontend/api.py`: HTTP adapter for FastAPI
-- `frontend/presentation.py`: formatting helpers
-- `requirements-frontend.txt`: frontend dependencies
-- `FRONTEND_SETUP.md`: frontend setup guide
-- `tests/`: isolated unit, HTTP-adapter, and API tests
+- Detection scores do not establish package correctness; no held-out, manually verified package pass/fail set is available yet.
+- Overlap is only a rough uncertainty signal. Fully hidden items cannot be detected from a single image.
+- CPU inference may be slow. SQLite and local image storage suit a single-user demo, not a public production service.
+- The prototype has no authentication. Keep the API bound to localhost unless you add appropriate security.

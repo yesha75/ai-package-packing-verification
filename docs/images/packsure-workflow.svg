@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="330" viewBox="0 0 1200 330" role="img" aria-labelledby="title desc">
+  <title id="title">PackSure inspection workflow</title>
+  <desc id="desc">An image is uploaded to the Streamlit interface, processed by a FastAPI service and YOLO detector, checked against a packing list, then shown as Pass or Needs Review with annotated results.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f5f9ff"/><stop offset="1" stop-color="#eaf5f1"/></linearGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto"><path d="M0 0 10 5 0 10Z" fill="#71869b"/></marker>
+    <filter id="shadow" x="-15%" y="-15%" width="130%" height="140%"><feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#29445c" flood-opacity=".12"/></filter>
+  </defs>
+  <rect width="1200" height="330" rx="24" fill="url(#bg)"/>
+  <text x="600" y="48" text-anchor="middle" font-family="Arial,sans-serif" font-size="24" font-weight="700" fill="#18324b">From package photo to review decision</text>
+  <g font-family="Arial,sans-serif" text-anchor="middle" filter="url(#shadow)">
+    <g transform="translate(42 95)"><rect width="240" height="150" rx="18" fill="#fff"/><circle cx="120" cy="42" r="25" fill="#d8eaff"/><path d="M104 47h32l-4-18h-24zM100 50h40v5h-40z" fill="#3979b8"/><text x="120" y="94" font-size="17" font-weight="700" fill="#18324b">1 · Upload image</text><text x="120" y="120" font-size="13" fill="#5d7185">Streamlit dashboard</text></g>
+    <g transform="translate(338 95)"><rect width="240" height="150" rx="18" fill="#fff"/><circle cx="120" cy="42" r="25" fill="#d9f2e7"/><path d="M108 31h24v24h-24zM114 37h12M114 43h12M114 49h8" stroke="#27865c" stroke-width="3" fill="none"/><text x="120" y="94" font-size="17" font-weight="700" fill="#18324b">2 · Detect objects</text><text x="120" y="120" font-size="13" fill="#5d7185">FastAPI + checklist model</text></g>
+    <g transform="translate(634 95)"><rect width="240" height="150" rx="18" fill="#fff"/><circle cx="120" cy="42" r="25" fill="#fff0d9"/><path d="M108 31h24v24h-24zM113 37h14M113 43h14M113 49h8" stroke="#c27919" stroke-width="3" fill="none"/><text x="120" y="94" font-size="17" font-weight="700" fill="#18324b">3 · Compare counts</text><text x="120" y="120" font-size="13" fill="#5d7185">Explainable packing rules</text></g>
+    <g transform="translate(930 95)"><rect width="240" height="150" rx="18" fill="#fff"/><circle cx="120" cy="42" r="25" fill="#e9e4ff"/><path d="m108 42 8 8 17-19" stroke="#705bc1" stroke-width="4" fill="none"/><text x="120" y="94" font-size="17" font-weight="700" fill="#18324b">4 · Review result</text><text x="120" y="120" font-size="13" fill="#5d7185">Decision + annotated image</text></g>
+  </g>
+  <g stroke="#71869b" stroke-width="3" marker-end="url(#arrow)"><path d="M287 170h43"/><path d="M583 170h43"/><path d="M879 170h43"/></g>
+  <text x="600" y="288" text-anchor="middle" font-family="Arial,sans-serif" font-size="14" fill="#65798b">Human review remains essential: a model Pass is decision support, not a guarantee.</text>
+</svg>

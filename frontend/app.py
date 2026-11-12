@@ -275,7 +275,14 @@ except APIError as exc:
 
 with st.sidebar:
     st.success("Connected to FastAPI")
-    st.caption("Model configured: " + str(health.get("model_weights", "unknown")))
+    models_by_checklist = health.get("models_by_checklist", {})
+    if models_by_checklist:
+        st.caption("Model by checklist: " + "; ".join(
+            f"{checklist_id} → {weights}"
+            for checklist_id, weights in models_by_checklist.items()
+        ))
+    else:
+        st.caption("Model configured: " + str(health.get("model_weights", "unknown")))
     st.divider()
     st.markdown("**How it works**")
     st.caption("1. Choose a packing checklist\n\n2. Upload package images\n\n3. Run YOLO verification\n\n4. Review results and export")

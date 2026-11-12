@@ -1,0 +1,10 @@
+path: evaluation/packingdata_yolo_5class
+train: images/train
+val: images/test
+test: images/test
+names:
+  0: can
+  1: cup
+  2: plate
+  3: bowl
+  4: apple
